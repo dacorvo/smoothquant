@@ -66,7 +66,7 @@ In [examples/smoothquant_opt_demo.ipynb](examples/smoothquant_opt_demo.ipynb), w
 
 ## Results
 
-- SmoothQuant migrates **part of** the quantization difficulties from activation to weights, which smooths out the systematic outliers in activation, making both weights and activations **easy to quantize**. 
+- SmoothQuant migrates **part of** the quantization difficulties from activation to weights, which smooths out the systematic outliers in activation, making both weights and activations **easy to quantize**.
 
 ![migrate](figures/migrate.jpg)
 
@@ -94,3 +94,19 @@ If you find SmoothQuant useful or relevant to your research, please kindly cite 
   year={2022}
 }
 ```
+
+## Reproduction with pytorch 2.0 - CUDA 11.7 on an NVIDIA T4
+
+Using modified kernels submitted in https://github.com/Guangxuan-Xiao/torch-int/pull/2, the pre-quantized OPT models
+can be run on NVIDIA with sm-70 (Volta) and sm-75 (Turing).
+
+The following results were obtained on a typical AWS EC2 instance (g4dn.2xlarge - 8 x Intel Xeon, 32 GB, NVIDIA T4),
+for an inference of 1000 samples on the Lambada dataset (see smoothquant_opt_real_int8_demo.ipynb):
+
+|                | facebook/opt-6.7b | mit-han-lab/opt-6.7b-smoothquant |
+|----------------|-------------------|----------------------------------|
+| Hub size       | 13.32 GB          | 6.88 GB                          |
+| On-device size | 12.87 GB          | 7.26 GB                          |
+| Loading time   | 17.4 s            | 1 min 30 s                       |
+| Latency/sample | 309 ms            | 230 ms                           |
+| Accuracy       | 0.798             | 0.802                            |
