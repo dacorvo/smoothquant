@@ -6,9 +6,7 @@ from numpy.random import RandomState
 import triton
 import triton.language as tl
 
-def _test_matmul(a, b,
-                 m, block_m, n, block_n, k, block_k, group_size_m,
-                 lhs_dtype, rhs_dtype):
+def _test_matmul(a, b, m, block_m, n, block_n, k, block_k, group_size_m):
 
     @triton.jit
     def matmul_kernel(
@@ -105,15 +103,13 @@ def test_matmul_int8(reference):
     group_size_m = 8
 
     def get_input(n, m):
-      return torch.randn((n, m), device='cuda', dtype=torch.float16).to(torch.int8)
+      return torch.randint(low=-128, high=127, size=(n, m), device='cuda', dtype=torch.int8)
 
     torch.manual_seed(0)
 
-    a = get_input(m, k)
-    b = get_input(k, n)
-    triton_output = _test_matmul(a, b,
-                                 m, block_m, n, block_n, k, block_k, group_size_m,
-                                 "int8", "int8")
+    a = get_input(m, k).contiguous()
+    b = get_input(k, n).contiguous()
+    triton_output = _test_matmul(a, b, m, block_m, n, block_n, k, block_k, group_size_m)
     if reference == "torch":
-        ref_output = torch.matmul(a.to(torch.float16), b.to(torch.float16)).to(torch.int32)
+        ref_output = torch.matmul(a.to(torch.float32), b.to(torch.float32)).to(torch.int32)
         assert torch.allclose(triton_output, ref_output, atol=1e-2, rtol=1e-2)
