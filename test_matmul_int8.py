@@ -59,14 +59,12 @@ def _test_matmul(a, b, m, block_m, n, block_n, k, block_k, group_size_m):
         # We accumulate into a `[BLOCK_SIZE_M, BLOCK_SIZE_N]` block
         # of fp32 values for higher accuracy.
         # `accumulator` will be converted back to fp16 after the loop.
-        accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
+        accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.int32)
         for k in range(0, tl.cdiv(K, BLOCK_SIZE_K)):
             # Load the next block of A and B, generate a mask by checking the K dimension.
             # If it is out of bounds, set it to 0.
             a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k * BLOCK_SIZE_K, other=0.0)
-            a = a.to(tl.float16)
             b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k * BLOCK_SIZE_K, other=0.0)
-            b = b.to(tl.float16)
             # We accumulate along the K dimension.
             accumulator += tl.dot(a, b)
             # Advance the ptrs to the next K block.
