@@ -24,9 +24,7 @@ def _test_matmul(a, b,
         stride_cm, stride_cn,
         # Meta-parameters
         BLOCK_SIZE_M: tl.constexpr, BLOCK_SIZE_N: tl.constexpr, BLOCK_SIZE_K: tl.constexpr,
-        GROUP_SIZE_M: tl.constexpr,
-        IS_LHS_FP8: tl.constexpr,
-        IS_RHS_FP8: tl.constexpr,
+        GROUP_SIZE_M: tl.constexpr
     ):
         """Kernel for computing the matmul C = A x B.
         A has shape (M, K), B has shape (K, N) and C has shape (M, N)
@@ -68,12 +66,8 @@ def _test_matmul(a, b,
             # Load the next block of A and B, generate a mask by checking the K dimension.
             # If it is out of bounds, set it to 0.
             a = tl.load(a_ptrs, mask=offs_k[None, :] < K - k * BLOCK_SIZE_K, other=0.0)
-            if IS_LHS_FP8:
-              a = a.to(tl.float8e5, bitcast=True)
             a = a.to(tl.float16)
             b = tl.load(b_ptrs, mask=offs_k[:, None] < K - k * BLOCK_SIZE_K, other=0.0)
-            if IS_RHS_FP8:
-              b = b.to(tl.float8e5, bitcast=True)
             b = b.to(tl.float16)
             # We accumulate along the K dimension.
             accumulator += tl.dot(a, b)
@@ -99,9 +93,7 @@ def _test_matmul(a, b,
         b.stride(0), b.stride(1),
         triton_output.stride(0), triton_output.stride(1),
         block_m, block_n, block_k,
-        group_size_m,
-        IS_LHS_FP8=(lhs_dtype == "float8"),
-        IS_RHS_FP8=(rhs_dtype == "float8")
+        group_size_m
     )
     return triton_output
 
