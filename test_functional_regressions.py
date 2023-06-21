@@ -74,7 +74,7 @@ def _test_matmul(a, b,
             # Advance the ptrs to the next K block.
             a_ptrs += BLOCK_SIZE_K * stride_ak
             b_ptrs += BLOCK_SIZE_K * stride_bk
-        c = accumulator.to(tl.float16)
+        c = accumulator.to(tl.int32)
 
         # -----------------------------------------------------------
         # Write back the block of the output matrix C with masks.
@@ -85,7 +85,7 @@ def _test_matmul(a, b,
         tl.store(c_ptrs, c, mask=c_mask)
 
     grid = (triton.cdiv(m, block_m) * triton.cdiv(n, block_n),)
-    triton_output = torch.empty((m, n), device=a.device, dtype=torch.float16)
+    triton_output = torch.empty((m, n), device=a.device, dtype=torch.int32)
     matmul_kernel[grid](
         a, b, triton_output,
         m, n, k,
@@ -115,5 +115,5 @@ def test_matmul_int8(reference):
                                  m, block_m, n, block_n, k, block_k, group_size_m,
                                  "int8", "int8")
     if reference == "torch":
-        ref_output = torch.matmul(a.to(torch.float16), b.to(torch.float16))
+        ref_output = torch.matmul(a.to(torch.float16), b.to(torch.float16)).to(torch.int32)
         assert torch.allclose(triton_output, ref_output, atol=1e-2, rtol=1e-2)
